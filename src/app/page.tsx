@@ -12,7 +12,7 @@ import {
   getRecentProducts,
 } from "@/lib/queries";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [categories, featured, recent] = await Promise.all([

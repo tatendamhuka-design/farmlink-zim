@@ -29,4 +29,5 @@ export default function SavedPage() {
       <BottomNav />
     </div>
   );
-}
+}  
+export const dynamic = "force-dynamic"; 
