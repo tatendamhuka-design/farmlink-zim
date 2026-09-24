@@ -22,4 +22,5 @@ export async function GET() {
   ]);
 
   return NextResponse.json({ notifications, unread });
-}
+}  
+export const dynamic = "force-dynamic"; 

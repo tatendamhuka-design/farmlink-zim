@@ -65,4 +65,5 @@ export async function PATCH(req: Request) {
       { status: 500 }
     );
   }
-}
+}  
+export const dynamic = "force-dynamic"; 
