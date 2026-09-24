@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
+import { Footer } from "@/components/Footer";
 import { SavedProductsList } from "@/components/SavedProductsList";
 
 export const metadata = { title: "Saved Products" };
@@ -26,8 +27,8 @@ export default function SavedPage() {
         <SavedProductsList />
       </main>
 
+      <Footer />
       <BottomNav />
     </div>
   );
-}  
-export const dynamic = "force-dynamic"; 
+}
