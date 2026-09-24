@@ -5,8 +5,8 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-16 bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 text-white">
-      <div className="max-w-6xl mx-auto px-4 pt-12 pb-24 md:pb-12">
+    <footer className="mt-12 bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 text-white">
+      <div className="max-w-6xl mx-auto px-4 pt-10 pb-28 md:pb-12">
         {/* TOP */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* BRAND */}
@@ -127,9 +127,12 @@ export function Footer() {
               <li>
                 <a
                   href="mailto:hello@farmlink.co.zw"
-                  className="flex items-center gap-2 text-brand-50/90 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-brand-50/90 hover:text-white transition-colors break-all"
                 >
-                  <Mail className="h-4 w-4 text-brand-200" strokeWidth={2} />
+                  <Mail
+                    className="h-4 w-4 text-brand-200 shrink-0"
+                    strokeWidth={2}
+                  />
                   hello@farmlink.co.zw
                 </a>
               </li>
@@ -138,7 +141,10 @@ export function Footer() {
                   href="tel:+263771234567"
                   className="flex items-center gap-2 text-brand-50/90 hover:text-white transition-colors"
                 >
-                  <Phone className="h-4 w-4 text-brand-200" strokeWidth={2} />
+                  <Phone
+                    className="h-4 w-4 text-brand-200 shrink-0"
+                    strokeWidth={2}
+                  />
                   +263 77 123 4567
                 </a>
               </li>
@@ -172,6 +178,18 @@ export function Footer() {
                 About
               </Link>
             </div>
+          </div>
+
+          {/* POWERED BY — MOBILE ONLY */}
+          <div className="mt-4 md:hidden text-center">
+            <a
+              href="https://inkspiredigitaldesigns.co.zw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 hover:text-amber-200 transition-colors"
+            >
+              Powered by <span className="font-semibold">Inkspire Digital Designs</span>
+            </a>
           </div>
         </div>
       </div>

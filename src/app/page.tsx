@@ -34,11 +34,13 @@ export default async function HomePage() {
         {/* HERO */}
         <section className="mt-5">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-800 text-white p-6 md:p-10">
-            <div className="relative z-10 max-w-lg">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur text-xs font-medium mb-4">
+            <div className="relative z-10 max-w-lg mx-auto md:mx-0 text-center md:text-left">
+              {/* PILL — gold/amber */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 ring-1 ring-amber-300/40 backdrop-blur text-xs font-medium mb-4 text-amber-200">
                 <Sprout className="h-3.5 w-3.5" strokeWidth={2.5} />
                 Zimbabwe&apos;s direct farm marketplace
               </div>
+
               <h1 className="text-2xl md:text-4xl font-bold leading-tight">
                 Fresh from local farmers
               </h1>
@@ -46,17 +48,18 @@ export default async function HomePage() {
                 Quality products, fair prices. Connect directly with farmers
                 across Zimbabwe.
               </p>
-              <div className="mt-5 flex flex-wrap gap-3">
+
+              <div className="mt-5 flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start">
                 <Link
                   href="/products"
-                  className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-white text-brand-800 font-medium hover:bg-brand-50 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-white text-brand-800 font-medium hover:bg-brand-50 transition-colors"
                 >
                   Browse Products
                   <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
                 </Link>
                 <Link
                   href="/requests/new"
-                  className="inline-flex items-center gap-2 h-11 px-5 rounded-xl border border-white/40 text-white font-medium hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl border border-white/40 text-white font-medium hover:bg-white/10 transition-colors"
                 >
                   Post What You Need
                 </Link>
