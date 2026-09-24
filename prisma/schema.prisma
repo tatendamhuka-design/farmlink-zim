@@ -1,0 +1,583 @@
+// FarmLink Zim - Prisma Schema
+// Full marketplace + monetization data model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  CUSTOMER
+  FARMER
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum SourcingStatus {
+  OPEN
+  CLOSED
+  FULFILLED
+  EXPIRED
+}
+
+enum EnquiryStatus {
+  NEW
+  READ
+  RESPONDED
+  CLOSED
+}
+
+enum NotificationType {
+  PRODUCT_ENQUIRY
+  SOURCING_REQUEST_MATCH
+  NEW_LISTING_NEARBY
+  VERIFICATION_UPDATE
+  SYSTEM
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  FRAUD
+  WRONG_CATEGORY
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+enum AdminActionType {
+  VERIFY_FARMER
+  REJECT_FARMER
+  SUSPEND_USER
+  UNSUSPEND_USER
+  REMOVE_LISTING
+  REMOVE_REQUEST
+  FEATURE_LISTING
+  UNFEATURE_LISTING
+  ACTIVATE_AD
+  DEACTIVATE_AD
+  CATEGORY_CREATE
+  CATEGORY_UPDATE
+  CATEGORY_DELETE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentType {
+  FEATURED_LISTING
+  FARMER_PRO
+  ADVERTISEMENT
+  SOURCING_PREMIUM
+  TRANSACTION_COMMISSION
+  WEBSITE_SERVICE
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO_MONTHLY
+  PRO_ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum AdPlacement {
+  HOME_BANNER
+  SEARCH_SIDEBAR
+  PRODUCT_FOOTER
+  DASHBOARD
+  CATEGORY_TOP
+}
+
+enum AdStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REJECTED
+}
+
+enum WebsiteServiceStatus {
+  REQUESTED
+  QUOTED
+  ACCEPTED
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
+}
+
+// ============================================================
+// USERS & AUTH
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  fullName     String
+  role         UserRole @default(CUSTOMER)
+  avatarUrl    String?
+  isSuspended  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  farmerProfile   FarmerProfile?
+  customerProfile CustomerProfile?
+  accounts        Account[]
+  sessions        Session[]
+  notifications   Notification[]
+  adminActions    AdminAction[]    @relation("AdminPerformedActions")
+  payments        Payment[]
+  savedProducts   SavedProduct[]
+  subscriptions   Subscription[]
+
+  @@index([role])
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// PROFILES
+// ============================================================
+
+model FarmerProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  farmName           String
+  farmDescription    String?
+  profilePhotoUrl    String?
+  farmPhotoUrl       String?
+  whatsappNumber     String
+  phoneNumber        String?
+  province           String
+  city               String
+  area               String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verifiedByUserId   String?
+  rejectionReason    String?
+  isPro              Boolean            @default(false)
+  proExpiresAt       DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products          Product[]
+  enquiriesReceived Enquiry[]
+  sourcingResponses SourcingResponse[]
+
+  @@index([verificationStatus])
+  @@index([province, city])
+  @@index([isPro])
+}
+
+model CustomerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  province     String?
+  city         String?
+  area         String?
+  isCommercial Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests  SourcingRequest[]
+  enquiries Enquiry[]
+
+  @@index([province, city])
+}
+
+// ============================================================
+// CATALOG
+// ============================================================
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  products Product[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  farmerId          String
+  categoryId        String
+  title             String
+  slug              String
+  description       String?  @db.Text
+  quantity          Float
+  unit              String
+  price             Float
+  priceUnit         String
+  currency          String   @default("USD")
+  province          String
+  city              String
+  area              String?
+  minimumOrder      Float?
+  deliveryAvailable Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  isSoldOut         Boolean  @default(false)
+  viewCount         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  farmer   FarmerProfile   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  category Category        @relation(fields: [categoryId], references: [id])
+  images   ProductImage[]
+  enquiries Enquiry[]
+  savedBy  SavedProduct[]
+  reports  Report[]
+  featured FeaturedListing?
+
+  @@index([categoryId, isActive])
+  @@index([province, city])
+  @@index([isActive, isSoldOut])
+  @@index([title])
+  @@index([createdAt])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+}
+
+// ============================================================
+// SOURCING REQUESTS
+// ============================================================
+
+model SourcingRequest {
+  id            String         @id @default(cuid())
+  customerId    String
+  title         String
+  description   String?        @db.Text
+  quantity      Float
+  unit          String
+  province      String
+  city          String
+  requiredBy    DateTime?
+  status        SourcingStatus @default(OPEN)
+  isPremium     Boolean        @default(false)
+  premiumPaidAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  customer  CustomerProfile    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  responses SourcingResponse[]
+
+  @@index([status, createdAt])
+  @@index([province, city])
+}
+
+model SourcingResponse {
+  id          String   @id @default(cuid())
+  requestId   String
+  farmerId    String
+  message     String   @db.Text
+  quotedPrice Float?
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+
+  request SourcingRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  farmer  FarmerProfile   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([farmerId])
+}
+
+// ============================================================
+// ENQUIRIES & SAVED
+// ============================================================
+
+model Enquiry {
+  id           String        @id @default(cuid())
+  productId    String
+  farmerId     String
+  customerId   String
+  quantity     Float?
+  unit         String?
+  message      String        @db.Text
+  contactPhone String?
+  status       EnquiryStatus @default(NEW)
+  respondedAt  DateTime?
+  createdAt    DateTime      @default(now())
+
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  farmer   FarmerProfile   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([farmerId, status])
+  @@index([customerId])
+  @@index([productId])
+}
+
+model SavedProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// ============================================================
+// REPORTS & ADMIN ACTIONS
+// ============================================================
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  productId  String?
+  reason     ReportReason
+  details    String?      @db.Text
+  status     ReportStatus @default(OPEN)
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([productId])
+}
+
+model AdminAction {
+  id           String          @id @default(cuid())
+  adminId      String
+  action       AdminActionType
+  targetUserId String?
+  targetType   String?
+  targetId     String?
+  notes        String?         @db.Text
+  createdAt    DateTime        @default(now())
+
+  admin User @relation("AdminPerformedActions", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// MONETIZATION
+// ============================================================
+
+model Payment {
+  id          String        @id @default(cuid())
+  userId      String
+  amount      Float
+  currency    String        @default("USD")
+  type        PaymentType
+  provider    String        @default("stub")
+  providerRef String?
+  reference   String        @unique
+  status      PaymentStatus @default(PENDING)
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+  completedAt DateTime?
+  refundedAt  DateTime?
+
+  user            User             @relation(fields: [userId], references: [id])
+  featuredListing FeaturedListing?
+  subscription    Subscription?
+  advertisement   Advertisement?
+
+  @@index([userId, status])
+  @@index([type, status])
+  @@index([createdAt])
+}
+
+model FeaturedListing {
+  id            String        @id @default(cuid())
+  productId     String        @unique
+  paymentId     String?       @unique
+  startDate     DateTime
+  expiryDate    DateTime
+  amountPaid    Float
+  currency      String        @default("USD")
+  paymentStatus PaymentStatus @default(PENDING)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([isActive, expiryDate])
+  @@index([startDate])
+}
+
+model Subscription {
+  id         String             @id @default(cuid())
+  userId     String
+  paymentId  String?            @unique
+  plan       SubscriptionPlan   @default(FREE)
+  status     SubscriptionStatus @default(ACTIVE)
+  amountPaid Float              @default(0)
+  currency   String             @default("USD")
+  startDate  DateTime           @default(now())
+  endDate    DateTime?
+  autoRenew  Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([plan])
+}
+
+model Advertisement {
+  id             String        @id @default(cuid())
+  advertiserName String
+  contactEmail   String
+  contactPhone   String?
+  title          String
+  description    String?       @db.Text
+  imageUrl       String
+  linkUrl        String
+  placement      AdPlacement
+  startDate      DateTime
+  endDate        DateTime
+  status         AdStatus      @default(DRAFT)
+  paymentId      String?       @unique
+  amountPaid     Float         @default(0)
+  currency       String        @default("USD")
+  paymentStatus  PaymentStatus @default(PENDING)
+  impressions    Int           @default(0)
+  clicks         Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([status, startDate, endDate])
+  @@index([placement])
+}
+
+// ============================================================
+// WEBSITE SERVICES (Future)
+// ============================================================
+
+model WebsiteServiceRequest {
+  id           String               @id @default(cuid())
+  userId       String
+  serviceType  String
+  description  String?              @db.Text
+  status       WebsiteServiceStatus @default(REQUESTED)
+  quotedAmount Float?
+  currency     String               @default("USD")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([userId, status])
+}
